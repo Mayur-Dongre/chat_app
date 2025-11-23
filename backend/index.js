@@ -1,7 +1,30 @@
-const express = require('express');
+import express from "express";
+import dotenv from "dotenv";
+import http from "http";
+import { Server } from "socket.io";
+
+dotenv.config();
+const PORT = process.env.PORT || 8080;
 
 const app = express();
-const port = 8080;
+
+const server = http.createServer(app);
+// const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        allowedHeaders: ["*"],
+        origin: "*"
+    }
+})
+
+
+io.on('connection', (socket) => {
+  console.log("client connected");
+  socket.on('chat msg', (msg) => {
+    console.log('received msg : ' + msg);
+  });
+});
+
 
 // Define a route
 app.get('/', (req, res) => {
@@ -9,7 +32,7 @@ app.get('/', (req, res) => {
 });
 
 // Start the server
-app.listen(port, () => {
-    console.log(`Server is listening at http://localhost:${port}`)
+server.listen(PORT, () => {
+    console.log(`Server is listening at http://localhost:${PORT}`)
 });
 
