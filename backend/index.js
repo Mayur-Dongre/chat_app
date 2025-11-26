@@ -11,27 +11,42 @@ const app = express();
 const server = http.createServer(app);
 // const io = new Server(server);
 const io = new Server(server, {
-  cors: {
-    allowedHeaders: ["*"],
-    origin: "*",
-  },
+	cors: {
+		allowedHeaders: ["*"],
+		origin: "*",
+	},
 });
 
+const userSocketMap = {};
+
 io.on("connection", (socket) => {
-  console.log("client connected");
-  socket.on('chat msg', (msg) => {
-    console.log('received msg : ' + msg);
-  });
-  // console.log("received msg : " + msg);
-  // socket.broadcast.emit(msg);
+
+	const username = socket.handshake.query.username;
+	console.log("Username of client connected: ", username);
+
+	userSocketMap[username] = socket;
+
+	socket.on("chat msg", (msg) => {
+		const receiverSocket = 	userSocketMap[msg.receiver];
+		if (receiverSocket) {
+			receiverSocket.emit('chat msg', msg);
+		}
+
+		// socket.broadcast.emit('chat msg', msg);
+		// console.log("received msg : " + msg);
+		// console.log("msg.textMsg: ", msg.textMsg);
+		// console.log("msg.sender: ", msg.sender);
+		// console.log("msg.receiver: ", msg.receiver);
+		// socket.broadcast.emit('chat msg', msg)
+	});
 });
 
 // Define a route
 app.get("/", (req, res) => {
-  res.send("Congratulations Mad World Folks!");
+	res.send("Congratulations Mad World Folks!");
 });
 
 // Start the server
 server.listen(PORT, () => {
-  console.log(`Server is listening at http://localhost:${PORT}`);
+	console.log(`Server is listening at http://localhost:${PORT}`);
 });
