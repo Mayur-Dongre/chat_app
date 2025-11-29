@@ -20,16 +20,15 @@ const io = new Server(server, {
 const userSocketMap = {};
 
 io.on("connection", (socket) => {
-
 	const username = socket.handshake.query.username;
 	console.log("Username of client connected: ", username);
 
 	userSocketMap[username] = socket;
 
 	socket.on("chat msg", (msg) => {
-		const receiverSocket = 	userSocketMap[msg.receiver];
+		const receiverSocket = userSocketMap[msg.receiver];
 		if (receiverSocket) {
-			receiverSocket.emit('chat msg', msg);
+			receiverSocket.emit("chat msg", msg);
 		}
 
 		// socket.broadcast.emit('chat msg', msg);
@@ -37,7 +36,7 @@ io.on("connection", (socket) => {
 		// console.log("msg.textMsg: ", msg.textMsg);
 		// console.log("msg.sender: ", msg.sender);
 		// console.log("msg.receiver: ", msg.receiver);
-		// socket.broadcast.emit('chat msg', msg)
+		// socket.broadcast.emit("chat msg", msg);
 	});
 });
 
