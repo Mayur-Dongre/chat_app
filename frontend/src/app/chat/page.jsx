@@ -6,6 +6,7 @@ import axios from "axios";
 import ChatUsers from "../_components/chatUsers";
 import { useUsersStore } from "../zustand/useUsersStore";
 import { useChatReceiverStore } from "../zustand/useChatReceiverStore";
+import { useChatMsgsStore } from "../zustand/useChatMsgsStore";
 
 const Chat = () => {
 	const [msgs, setMsgs] = useState([]);
@@ -15,6 +16,7 @@ const Chat = () => {
 	const { authName } = useAuthStore();
 	const { updateUsers } = useUsersStore();
 	const { chatReceiver } = useChatReceiverStore();
+	const { chatMsgs, updateChatMsgs } = useChatMsgsStore();
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -44,8 +46,9 @@ const Chat = () => {
 
 		// Listen for incoming msgs
 		newSocket.on("chat msg", (msgrecv) => {
-			console.log("received msg on client " + msgrecv);
-			setMsgs((prevMsgs) => [...prevMsgs, { text: msgrecv.textMsg, sentByCurrUser: false }]);
+			console.log("received msg on client " + msgrecv.textMsg);
+			updateChatMsgs({...chatMsgs, msgrecv});
+			// setMsgs((prevMsgs) => [...prevMsgs, { text: msgrecv.textMsg, sentByCurrUser: false }]);
 		});
 
 		getUserData();
@@ -65,14 +68,15 @@ const Chat = () => {
 		if (socket) {
 			socket.emit("chat msg", msgToBeSent);
 
+			// setMsgs((prevMsgs) => [...prevMsgs, { text: msg, sentByCurrUser: true, time }]);
+			updateChatMsgs([...chatMsgs, msgToBeSent]);
+			setMsg("");
+
 			const now = new Date();
 			const time = now.toLocaleTimeString("en-US", {
 				hour: "2-digit",
 				minute: "2-digit",
 			});
-
-			setMsgs((prevMsgs) => [...prevMsgs, { text: msg, sentByCurrUser: true, time }]);
-			setMsg("");
 		}
 	};
 
@@ -93,24 +97,24 @@ const Chat = () => {
 
 				{/* Messages Container */}
 				<div className="flex-1 overflow-y-auto p-4 space-y-4">
-					{msgs.length === 0 ? (
+					{chatMsgs.length === 0 ? (
 						<div className="flex items-center justify-center h-full">
 							<p className="text-gray-400">No messages yet. Start the conversation!</p>
 						</div>
 					) : (
-						msgs.map((message, index) => (
+						chatMsgs?.map((message, index) => (
 							<div
 								key={index}
-								className={`flex ${message.sentByCurrUser ? "justify-end" : "justify-start"}`}
+								className={`flex ${message.sender === authName ? "justify-end" : "justify-start"}`}
 							>
 								<div
 									className={`max-w-xs lg:max-w-md ${
-										message.sentByCurrUser ? "text-right" : "text-left"
+										message.sender === authName ? "text-right" : "text-left"
 									}`}
 								>
 									<div
 										className={`inline-block px-4 py-2 rounded-2xl shadow-md ${
-											message.sentByCurrUser
+											message.sender === authName
 												? "bg-blue-500 text-white rounded-br-none"
 												: "bg-white text-gray-800 rounded-bl-none"
 										}`}
@@ -119,10 +123,10 @@ const Chat = () => {
 									</div>
 									<p
 										className={`text-xs text-gray-500 mt-1 ${
-											message.sentByCurrUser ? "text-right" : "text-left"
+											message.sender === authName ? "text-right" : "text-left"
 										}`}
 									>
-										{message.time}
+										{message?.time}
 									</p>
 								</div>
 							</div>
