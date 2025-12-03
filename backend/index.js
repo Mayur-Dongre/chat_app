@@ -4,6 +4,8 @@ import http from "http";
 import { Server } from "socket.io";
 import { addMsgToConversation } from "./controllers/msgs.controller.js";
 import connectToMongoDB from "./db/connectToMongoDB.js";
+import msgsRouter from "./routes/msgs.route.js";
+import cors from "cors";
 
 dotenv.config();
 const PORT = process.env.PORT || 8080;
@@ -47,6 +49,8 @@ io.on("connection", (socket) => {
 		// socket.broadcast.emit("chat msg", msg);
 	});
 });
+
+app.use("/msgs", msgsRouter);
 
 // Define a route
 app.get("/", (req, res) => {

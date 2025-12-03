@@ -22,4 +22,20 @@ export const addMsgToConversation = async (participants, msg) => {
 	}
 };
 
-
+export const getMsgsForConversation = async (req, res) => {
+	try {
+		const { sender, receiver } = req.query;
+		console.log(sender + receiver);
+		const participants = [sender, receiver];
+		// Find conversation by participants
+		const conv = await conversation.findOne({ users: { $all: participants } });
+		if (!conv) {
+			console.log("Conversation not found");
+			return res.status(200).send();
+		}
+		return res.json(conv.msgs);
+	} catch (error) {
+		console.log("Error fetching messages:", error);
+		res.status(500).json({ error: "Server error" });
+	}
+};
