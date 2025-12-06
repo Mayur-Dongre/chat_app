@@ -12,6 +12,18 @@ const PORT = process.env.PORT || 8080;
 
 const app = express();
 
+// add cors middleware for express routes
+app.use(
+	cors({
+		origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+		methods: ["GET", "POST", "PUT", "DELETE"],
+		credentials: true, // Add this line
+	})
+);
+
+// add a json parser if you are handling JSON data
+app.use(express.json());
+
 const server = http.createServer(app);
 // const io = new Server(server);
 const io = new Server(server, {
@@ -36,17 +48,10 @@ io.on("connection", (socket) => {
 		}
 
 		addMsgToConversation([msg.sender, msg.receiver], {
-			text: msg.textMsg,
+			text: msg.text,
 			sender: msg.sender,
 			receiver: msg.receiver,
 		});
-
-		// socket.broadcast.emit('chat msg', msg);
-		// console.log("received msg : " + msg);
-		// console.log("msg.textMsg: ", msg.textMsg);
-		// console.log("msg.sender: ", msg.sender);
-		// console.log("msg.receiver: ", msg.receiver);
-		// socket.broadcast.emit("chat msg", msg);
 	});
 });
 
