@@ -16,7 +16,7 @@ const Chat = () => {
 	const { authName } = useAuthStore();
 	const { updateUsers } = useUsersStore();
 	const { chatReceiver } = useChatReceiverStore();
-	const { chatMsgs, updateChatMsgs } = useChatMsgsStore();
+	const { chatMsgs, updateChatMsgs, addChatMsg } = useChatMsgsStore();
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -24,7 +24,7 @@ const Chat = () => {
 
 	useEffect(() => {
 		scrollToBottom();
-	}, [msgs]);
+	}, [chatMsgs]);
 
 	const getUserData = async () => {
 		const res = await axios.get("http://localhost:8081/users", {
@@ -46,32 +46,39 @@ const Chat = () => {
 
 		// Listen for incoming msgs
 		newSocket.on("chat msg", (msgrecv) => {
-			console.log("received msg on client " + msgrecv.textMsg);
-			updateChatMsgs({...chatMsgs, msgrecv});
-			// setMsgs((prevMsgs) => [...prevMsgs, { text: msgrecv.textMsg, sentByCurrUser: false }]);
+			console.log("received msg object on client " + msgrecv);
+			// console.log("received msg on client " + msgrecv.text);
+			console.log("chatMsgs before receiving msg : ", chatMsgs);
+
+			// debugger;
+			addChatMsg(msgrecv);
+			// updateChatMsgs([...chatMsgs, msgrecv]);
+			// setMsgs((prevMsgs) => [...prevMsgs, { text: msgrecv.text, sentByCurrUser: false }]);
+			console.log("chatMsgs after receiving msg : ", chatMsgs);
 		});
 
 		getUserData();
 
 		// Clean up function
 		return () => newSocket.close();
-	}, []);
+	}, [authName, addChatMsg]);
 
 	const sendMsg = (e) => {
 		e.preventDefault();
 
 		const msgToBeSent = {
-			textMsg: msg,
+			text: msg,
 			sender: authName,
 			receiver: chatReceiver,
 		};
 		if (socket) {
 			socket.emit("chat msg", msgToBeSent);
-
+			console.log("chatMsgs before sending msg : ", chatMsgs);
 			// setMsgs((prevMsgs) => [...prevMsgs, { text: msg, sentByCurrUser: true, time }]);
-			updateChatMsgs([...chatMsgs, msgToBeSent]);
+			// updateChatMsgs([...chatMsgs, msgToBeSent]);
+			addChatMsg(msgToBeSent);
 			setMsg("");
-
+			console.log("chatMsgs after sending msg : ", chatMsgs);
 			const now = new Date();
 			const time = now.toLocaleTimeString("en-US", {
 				hour: "2-digit",
