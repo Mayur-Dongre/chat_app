@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "./zustand/useAuthStore";
@@ -8,7 +8,27 @@ const Auth = () => {
 	const router = useRouter();
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
-	const { authName, updateAuthName } = useAuthStore();
+	const { authName, updateAuthName, isHydrated } = useAuthStore();
+
+	useEffect(() => {
+		if (isHydrated && authName) {
+			router.replace("/chat");
+		}
+	}, [authName, isHydrated, router]);
+
+	// Show loading while hydrating
+	if (!isHydrated) {
+		return (
+			<div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+			</div>
+		);
+	}
+
+	// Don't show auth form if already logged in
+	if (authName) {
+		return null;
+	}
 
 	const signUpFunc = async (event) => {
 		event.preventDefault();
