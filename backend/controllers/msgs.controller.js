@@ -12,8 +12,14 @@ export const addMsgToConversation = async (participants, msg) => {
 			console.log("no conversation");
 		}
 
+		// Add timestamp if not present
+		const msgWithTimestamp = {
+			...msg,
+			timestamp: msg.timestamp || new Date(),
+		};
+
 		// Add msg to the conversation
-		Conversation.msgs.push(msg);
+		Conversation.msgs.push(msgWithTimestamp);
 		await Conversation.save();
 		// return res.status(200).json(Conversation);
 	} catch (error) {

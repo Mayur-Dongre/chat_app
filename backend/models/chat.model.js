@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const msgSchema = mongoose.Schema({
 	text: {
 		type: String,
-		required: true,
+		required: false, // false since file messages might not have text
 	},
 	sender: {
 		type: String,
@@ -12,6 +12,32 @@ const msgSchema = mongoose.Schema({
 	receiver: {
 		type: String,
 		required: true,
+	},
+	messageType: {
+		type: String,
+		enum: ["text", "file"],
+		default: "text",
+	},
+	// File-specific fields
+	fileId: {
+		type: mongoose.Schema.Types.ObjectId,
+		required: false,
+	},
+	fileName: {
+		type: String,
+		required: false,
+	},
+	fileType: {
+		type: String,
+		required: false,
+	},
+	fileSize: {
+		type: Number,
+		required: false,
+	},
+	timestamp: {
+		type: Date,
+		default: Date.now,
 	},
 });
 
