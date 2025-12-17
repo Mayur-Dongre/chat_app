@@ -5,7 +5,7 @@ import { useAuthStore } from "../zustand/useAuthStore";
 import { useChatMsgsStore } from "../zustand/useChatMsgsStore";
 import axios from "axios";
 
-const ChatUsers = () => {
+const ChatUsers = ({ userStatus }) => {
 	const { users } = useUsersStore();
 	const { chatReceiver, updateChatReceiver } = useChatReceiverStore();
 	const { authName } = useAuthStore();
@@ -44,6 +44,7 @@ const ChatUsers = () => {
 	};
 
 	const setChatReceiver = (user) => {
+		// debugger
 		updateChatReceiver(user.username);
 	};
 
@@ -85,44 +86,55 @@ const ChatUsers = () => {
 			{/* Users List */}
 			<div className="overflow-y-auto h-[calc(100%-80px)]">
 				{users
-					.filter((user) => user.username !== authName)
-					.map((user, index) => (
-						<div
-							key={index}
-							onClick={() => setChatReceiver(user)}
-							className={`flex items-center gap-3 p-4 cursor-pointer transition-all duration-200 border-b border-gray-100 hover:bg-gray-50 ${
-								chatReceiver === user.username
-									? "bg-blue-50 border-l-4 border-l-blue-500"
-									: "hover:border-l-4 hover:border-l-blue-200"
-							}`}
-						>
-							{/* Avatar */}
+					?.filter((user) => user.username !== authName)
+					.map((user, index) => {
+						// debugger;
+						const isOnline = userStatus[user.username]?.online;
+						return (
 							<div
-								className={`w-12 h-12 rounded-full ${getAvatarColor(
-									user.username
-								)} flex items-center justify-center flex-shrink-0 shadow-md`}
+								key={index}
+								onClick={() => setChatReceiver(user)}
+								className={`p-4 cursor-pointer transition-all duration-200 border-b border-gray-100 hover:bg-gray-50 ${
+									chatReceiver === user.username
+										? "bg-blue-50 border-l-4 border-l-blue-500"
+										: "hover:border-l-4 hover:border-l-blue-200"
+								}`}
 							>
-								<span className="text-white font-semibold text-lg">
-									{getInitials(user.username)}
-								</span>
-							</div>
+								<div className="flex items-center gap-3">
+									<div className="relative">
+										{/* Avatar */}
+										<div
+											className={`w-12 h-12 rounded-full ${getAvatarColor(
+												user.username
+											)} flex items-center justify-center flex-shrink-0 shadow-md`}
+										>
+											<span className="text-white font-semibold text-lg">
+												{getInitials(user.username)}
+											</span>
+										</div>
 
-							{/* User Info */}
-							<div className="flex-1 min-w-0">
-								<div className="flex items-center justify-between">
-									<h3 className="font-semibold text-gray-800 truncate">{user.username}</h3>
-									{/* Online status indicator */}
-									<span className="w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+										{isOnline && (
+											<div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+										)}
+									</div>
+									{/* User Info */}
+									<div className="flex-1 min-w-0">
+										<p className="font-semibold text-gray-900 truncate">{user.username}</p>
+										<p className="text-xs text-gray-500">
+											{isOnline ? (
+												<span className="text-green-600 font-medium">Online</span>
+											) : (
+												"Offline"
+											)}
+										</p>
+									</div>
 								</div>
-								<p className="text-sm text-gray-500 truncate">
-									{chatReceiver === user.username ? "Active" : "Online"}
-								</p>
 							</div>
-						</div>
-					))}
+						);
+					})}
 
 				{/* Empty state */}
-				{users.filter((user) => user.username !== authName).length === 0 && (
+				{users?.filter((user) => user.username !== authName).length === 0 && (
 					<div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
 						<svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path

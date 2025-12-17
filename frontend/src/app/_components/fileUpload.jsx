@@ -28,15 +28,23 @@ const FileUpload = ({ sender, receiver, socket, onFileUploaded }) => {
 
 			console.log("File Uploaded: ", response.data);
 
+			// Add messageId to message
+			const fileMessageWithId = {
+				...response.data.fileMessage,
+				messageId: response.data.fileMessage.fileId || `${Date.now()}-${Math.random()}`,
+				status: "sent",
+			}
+
 			// emit socket event to notify receiver in real time
 			if (socket) {
-				socket.emit("file msg", response.data.fileMessage);
+				socket.emit("file msg", fileMessageWithId);
 			}
 
 			// Call callback if provided
 			if (onFileUploaded) {
-				onFileUploaded(response.data.fileMessage);
+				onFileUploaded(fileMessageWithId);
 			}
+			
 		} catch (error) {
 			console.error("Upload failed: ", error);
 			alert(error.response?.data?.error || "Upload failed");
