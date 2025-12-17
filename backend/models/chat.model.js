@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const msgSchema = mongoose.Schema({
+	messageId: {
+		type: String,
+		required: true,
+		unique: true,
+	},
 	text: {
 		type: String,
 		required: false, // false since file messages might not have text
@@ -17,6 +22,11 @@ const msgSchema = mongoose.Schema({
 		type: String,
 		enum: ["text", "file"],
 		default: "text",
+	},
+	status: {
+		type: String,
+		enum: ["sent", "delivered", "seen"],
+		default: "sent",
 	},
 	// File-specific fields
 	fileId: {
