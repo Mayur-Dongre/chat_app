@@ -1,16 +1,15 @@
-'use client'
-import dynamic from 'next/dynamic';
+"use client";
+import dynamic from "next/dynamic";
 
-const Chat = dynamic(() => import('./chat.jsx'), {
-  ssr: false,
-  loading: () => <p>Loading chat...</p>
+const Auth = dynamic(() => import("./auth.jsx"), {
+	ssr: false,
+	loading: () => <p>Loading...</p>,
 });
 
-
 export default function Home() {
-  return (
-    <div>
-      <Chat />
-    </div>
-  );
+	return (
+		<div>
+			<Auth />
+		</div>
+	);
 }

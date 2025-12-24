@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
-import { addMsgToConversation, updateMsgStatus } from "./controllers/msgs.controller.js";
+import { addMsgToConversation } from "./controllers/msgs.controller.js";
 import connectToMongoDB from "./db/connectToMongoDB.js";
 import msgsRouter from "./routes/msgs.route.js";
 import fileRouter from "./routes/file.route.js";
@@ -84,7 +84,6 @@ io.on("connection", (socket) => {
 			// });
 		}
 
-		// save to database
 		addMsgToConversation([msg.sender, msg.receiver], {
 			text: msg.text,
 			sender: msg.sender,
@@ -92,7 +91,6 @@ io.on("connection", (socket) => {
 			timestamp: msgWithTimestamp.timestamp,
 			messageId: msgWithTimestamp.messageId,
 			status: msgWithTimestamp.status,
-			messageType: msg.messageType || "text",
 		});
 	});
 
@@ -116,20 +114,6 @@ io.on("connection", (socket) => {
 			// 	timestamp: new Date().toISOString(),
 			// });
 		}
-
-		// Save file message to database
-		addMsgToConversation([fileMsg.sender, fileMsg.receiver], {
-			sender: fileMsg.sender,
-			receiver: fileMsg.receiver,
-			messageType: "file",
-			fileId: fileMsg.fileId,
-			fileName: fileMsg.fileName,
-			fileType: fileMsg.fileType,
-			fileSize: fileMsg.fileSize,
-			timestamp: fileMsg.timestamp,
-			messageId: fileMsg.messageId,
-			status: fileMsgWithStatus.status,
-		});
 	});
 
 	// handle msgs delivered ack
@@ -144,12 +128,9 @@ io.on("connection", (socket) => {
 			});
 			console.log("Delivery confirmation sent to sender");
 		}
-
-		// update msg status in database
-		updateMsgStatus([data.sender, socket.handshake.query.username], data.messageId, "delivered");
 	});
 
-	// handle msg seen/read
+	// handle msg seen or read
 	socket.on("msg seen", (data) => {
 		const senderSocket = userSocketMap[data.sender];
 		console.log("Seen ack received for message:", data.messageId, "to sender:", data.sender);
@@ -163,7 +144,10 @@ io.on("connection", (socket) => {
 		}
 
 		// update msg status in DB
-		updateMsgStatus([data.sender, socket.handshake.query.username], data.messageId, "seen");
+		addMsgToConversation([data.sender, socket.handshake.query.username], {
+			messageId: data.messageId,
+			status: "seen",
+		});
 	});
 
 	// handle typing indicator
