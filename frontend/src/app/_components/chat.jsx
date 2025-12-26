@@ -13,6 +13,8 @@ import FileMessage from "./fileMessage";
 import DateSeparator from "./DateSeparator";
 import { formatMessageTime, shouldShowDateSeparator } from "../utils/dateUtils";
 
+const API_URL = process.env.API_URL;
+
 const Chat = () => {
 	// const [msgs, setMsgs] = useState([]);
 	const router = useRouter();
@@ -31,6 +33,7 @@ const Chat = () => {
 	const { chatMsgs, updateChatMsgs, addChatMsg, updateMsgStatus } = useChatMsgsStore();
 
 	const chatReceiverRef = useRef(chatReceiver); // imp closures stale state
+	const [isBotMessage, setIsBotMessage] = useState(false);
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,13 +68,32 @@ const Chat = () => {
 		const res = await axios.get("http://localhost:8081/users", {
 			withCredentials: true,
 		});
+		// debugger;
 		updateUsers(res.data);
 		console.log("users: ", res.data);
+	};
+
+	const getLLMResponse = async (userMessage) => {
+		// debugger;
+		const res = await axios.post(
+			`https://qul1nvzmo5.execute-api.ap-south-1.amazonaws.com/prod/testFunction`,
+			{
+				userMessage,
+			}
+		);
+		// console.log("res: ", res);
+		return res?.data?.message;
+		// debugger;
 	};
 
 	useEffect(() => {
 		setIsReceiverTyping(false); // Reset typing indicator
 		chatReceiverRef.current = chatReceiver;
+		if (chatReceiverRef.current === "AI") {
+			setIsBotMessage(true);
+		} else {
+			setIsBotMessage(false);
+		}
 	}, [chatReceiver]);
 
 	useEffect(() => {
@@ -121,7 +143,7 @@ const Chat = () => {
 				sender: fileMsg.sender,
 			});
 
-			// ✅ Add seen logic for file messages too
+			// Add seen logic for file messages too
 			if (fileMsg.sender === chatReceiverRef.current) {
 				setTimeout(() => {
 					newSocket.emit("msg seen", {
@@ -210,24 +232,40 @@ const Chat = () => {
 				}
 			});
 		}
-	}, [chatReceiver, socket, authName]);
+	}, [chatReceiver, socket, authName, chatMsgs]);
 
-	const sendMsg = (e) => {
+	const sendMsg = async (e) => {
 		e.preventDefault();
 
 		if (!msg.trim()) return;
 
 		const messageId = `${Date.now()}-${Math.random()}`;
 
-		const msgToBeSent = {
-			text: msg,
-			sender: authName,
-			receiver: chatReceiver,
-			messageType: "text",
-			timestamp: new Date().toISOString(),
-			status: "sent",
-			messageId,
-		};
+		let response = null;
+		if (isBotMessage) {
+			response = await getLLMResponse(msg);
+			// debugger;
+		}
+
+		const msgToBeSent = response
+			? {
+					text: `${msg}_ @AI: ${response}`,
+					sender: authName,
+					receiver: chatReceiver,
+					messageType: "text",
+					timestamp: new Date().toISOString(),
+					status: "sent",
+					messageId,
+			  }
+			: {
+					text: msg,
+					sender: authName,
+					receiver: chatReceiver,
+					messageType: "text",
+					timestamp: new Date().toISOString(),
+					status: "sent",
+					messageId,
+			  };
 
 		if (socket) {
 			socket.emit("chat msg", msgToBeSent);
@@ -301,7 +339,7 @@ const Chat = () => {
 	return (
 		<div className="h-screen flex divide-x-4">
 			<div className="w-1/5">
-				<ChatUsers userStatus={userStatus} />
+				<ChatUsers userStatus={userStatus} isReceiverTyping={isReceiverTyping} />
 			</div>
 			<div className="w-4/5 flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
 				{/* Header */}
@@ -331,14 +369,16 @@ const Chat = () => {
 									</span>
 								</div>
 								{/* Online Indicator */}
-								{userStatus[chatReceiver]?.online && (
+								{(userStatus[chatReceiver]?.online || chatReceiver === "AI") && (
 									<div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
 								)}
 							</div>
 							<div>
 								<p className="font-semibold text-base">{chatReceiver}</p>
 								<p className="text-xs text-white/80">
-									{isReceiverTyping
+									{chatReceiver === "AI"
+										? "Online"
+										: isReceiverTyping
 										? "typing..."
 										: userStatus[chatReceiver]?.online
 										? "Online"
@@ -427,7 +467,9 @@ const Chat = () => {
 																>
 																	{formatMessageTime(message.timestamp)}
 																</p>
-																{message.sender === authName && (
+																{message.sender === authName && chatReceiver === "AI" ? (
+																	<span className="text-xs">{getStatusIcon("seen")}</span>
+																) : (
 																	<span className="text-xs">{getStatusIcon(message.status)}</span>
 																)}
 															</div>
@@ -461,6 +503,17 @@ const Chat = () => {
 								socket={socket}
 								onFileUploaded={handleFileUploaded}
 							/>
+							<button
+								type="button"
+								onClick={() => setIsBotMessage(true)}
+								className={`px-8 py-3 text-sm font-semibold rounded-full transition-all transform hover:scale-105 active:scale-95 ${
+									isBotMessage
+										? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+										: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+								}`}
+							>
+								{isBotMessage ? "🤖 AI On" : "🤖 AI"}
+							</button>
 							<button
 								type="submit"
 								disabled={!msg.trim() || !chatReceiver}

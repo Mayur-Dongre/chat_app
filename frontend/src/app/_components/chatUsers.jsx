@@ -5,7 +5,7 @@ import { useAuthStore } from "../zustand/useAuthStore";
 import { useChatMsgsStore } from "../zustand/useChatMsgsStore";
 import axios from "axios";
 
-const ChatUsers = ({ userStatus }) => {
+const ChatUsers = ({ userStatus, isReceiverTyping }) => {
 	const { users } = useUsersStore();
 	const { chatReceiver, updateChatReceiver } = useChatReceiverStore();
 	const { authName } = useAuthStore();
@@ -79,7 +79,7 @@ const ChatUsers = ({ userStatus }) => {
 			<div className="p-4 border-b border-gray-200 bg-gradient-to-r from-cyan-500 to-blue-500">
 				<h2 className="text-lg font-semibold text-white">Contacts</h2>
 				<p className="text-sm text-white/80">
-					{users.filter((u) => u.username !== authName).length} Online
+					{users.filter((u) => u.username !== authName).length} People
 				</p>
 			</div>
 
@@ -89,7 +89,7 @@ const ChatUsers = ({ userStatus }) => {
 					?.filter((user) => user.username !== authName)
 					.map((user, index) => {
 						// debugger;
-						const isOnline = userStatus[user.username]?.online;
+						const isOnline = userStatus[user.username]?.online || user.username === "AI";
 						return (
 							<div
 								key={index}
@@ -122,7 +122,11 @@ const ChatUsers = ({ userStatus }) => {
 										<p className="font-semibold text-gray-900 truncate">{user.username}</p>
 										<p className="text-xs text-gray-500">
 											{isOnline ? (
-												<span className="text-green-600 font-medium">Online</span>
+												chatReceiver === user.username && isReceiverTyping ? (
+													<span className="text-green-600 font-medium">Typing...</span>
+												) : (
+													<span className="text-green-600 font-medium">Online</span>
+												)
 											) : (
 												"Offline"
 											)}
