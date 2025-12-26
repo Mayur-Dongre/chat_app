@@ -18,7 +18,7 @@ export const uploadFile = async (req, res) => {
 		const gridfsBucket = getGridfsBucket();
 
 		if (!gridfsBucket) {
-			res.status(500).json({ error: "GridFS not Initialized" })
+			res.status(500).json({ error: "GridFS not Initialized" });
 		}
 
 		// Generate unique filename
@@ -44,6 +44,8 @@ export const uploadFile = async (req, res) => {
 
 		uploadStream.on("finish", async () => {
 			try {
+				// console.log("uploadStream.id : ", uploadStream.id);
+				// console.log("req =======>>>>>>>> ", req);
 				// create file message object
 				const fileMessage = {
 					sender,
@@ -53,24 +55,28 @@ export const uploadFile = async (req, res) => {
 					fileName: req.file.originalname,
 					fileType: req.file.mimetype,
 					fileSize: req.file.size,
+					messageId: `${Date.now()}-${Math.random()}`,
 					timestamp: new Date(),
 				};
+				// console.log("fileMessage: ", fileMessage);
 
 				// find or create conversation
-				const participants = [sender, receiver];
+				// const participants = [sender, receiver];
 
-				let Conversation = await conversation.findOne({ users: { $all: participants } });
+				// let Conversation = await conversation.findOne({ users: { $all: participants } });
 
-				if (!Conversation) {
-					Conversation = await conversation.create({ users: participants });
-				}
+				// if (!Conversation) {
+				// 	Conversation = await conversation.create({ users: participants });
+				// }
+
+				// console.log("Conversation: ", Conversation);
 
 				// Add file msg to conversation
-				Conversation.msgs.push(fileMessage);
-				await Conversation.save();
+				// Conversation.msgs.push(fileMessage);
+				// await Conversation.save();
 
-				// ✅ Log to verify all fields are present
-				console.log("File message created:", fileMessage);
+				// Log to verify all fields are present
+				// console.log("File message created:", fileMessage);
 
 				res.status(200).json({
 					success: true,
@@ -85,8 +91,8 @@ export const uploadFile = async (req, res) => {
 					fileMessage,
 				});
 			} catch (error) {
-				console.error("Error saving to conversation: ", error);
-				res.status(500).json({ error: "Error saving file message" });
+				console.error("Error uploading to database: ", error);
+				res.status(500).json({ error: "Error uploading file message" });
 			}
 		});
 
@@ -105,42 +111,43 @@ export const getFile = async (req, res) => {
 		const { fileId } = req.params;
 
 		if (!mongoose.Types.ObjectId.isValid(fileId)) {
-			return res.status(400).json({ error: "Invalid File ID" })
+			return res.status(400).json({ error: "Invalid File ID" });
 		}
 
 		const gridfsBucket = getGridfsBucket();
 
 		if (!gridfsBucket) {
-			return res.status(500).json({ error: "GridFS not initialized" })
+			return res.status(500).json({ error: "GridFS not initialized" });
 		}
 
 		// find file metadata
-		const files = await gridfsBucket
-			.find({ _id: new mongoose.Types.ObjectId(fileId) })
-			.toArray();
+		const files = await gridfsBucket.find({ _id: new mongoose.Types.ObjectId(fileId) }).toArray();
 
-			if (!files || files.length === 0) {
-				return res.status(404).json({ error: "File not found" })
+		if (!files || files.length === 0) {
+			return res.status(404).json({ error: "File not found" });
+		}
+
+		const file = files[0];
+
+		// set appropriate headers
+		res.set("Content-Type", file.contentType || "application/octet-stream");
+		res.set("Content-Length", file.length);
+		res.set(
+			"Content-Disposition",
+			`inline; filename="${file.metadata?.originalName || file?.filename}"`
+		);
+
+		// Stream file to response
+		const downloadStream = gridfsBucket.openDownloadStream(new mongoose.Types.ObjectId(fileId));
+
+		downloadStream.on("error", (error) => {
+			console.error("Stream error: ", error);
+			if (!res.headersSent) {
+				res.status(404).json({ error: "File not found or error streaming file" });
 			}
+		});
 
-			const file = files[0];
-
-			// set appropriate headers
-			res.set("Content-Type", file.contentType || "application/octet-stream");
-			res.set("Content-Length", file.length);
-			res.set("Content-Disposition", `inline; filename="${file.metadata?.originalName || file?.filename}"`);
-
-			// Stream file to response
-			const downloadStream = gridfsBucket.openDownloadStream(new mongoose.Types.ObjectId(fileId));
-
-			downloadStream.on("error", (error) => {
-				console.error("Stream error: ", error);
-				if (!res.headersSent) {
-					res.status(404).json({ error: "File not found or error streaming file" });
-				}
-			});
-
-			downloadStream.pipe(res);
+		downloadStream.pipe(res);
 	} catch (error) {
 		console.error("Error retrieving file: ", error);
 		if (!res.headersSent) {
