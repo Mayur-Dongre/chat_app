@@ -309,6 +309,23 @@ const Chat = () => {
 		}
 	};
 
+	const handleDocumentSummary = (summary, fileName) => {
+		const summaryMsgId = `${Date.now()}-${Math.random()}`;
+
+		const summaryMessage = {
+			text: `📄 **Summary of ${fileName}**\n\n${summary}`,
+			sender: "AI",
+			receiver: authName,
+			messageType: "text",
+			timestamp: new Date().toISOString(),
+			status: "delivered",
+			messageId: summaryMsgId,
+			isAI: true,
+		};
+
+		addChatMsg(summaryMessage);
+	};
+
 	const handleFileUploaded = (fileMessage) => {
 		// add the fileMessage to local state
 		addChatMsg(fileMessage);
@@ -435,6 +452,7 @@ const Chat = () => {
 														<FileMessage
 															message={message}
 															isSentByCurrentUser={message.sender === authName}
+															onSummarize={handleDocumentSummary}
 														/>
 														<div className="flex items-center justify-end gap-1 mt-1">
 															<p

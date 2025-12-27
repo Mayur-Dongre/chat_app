@@ -1,4 +1,9 @@
-const FileMessage = ({ message, isSentByCurrentUser }) => {
+import { useState } from "react";
+import axios from "axios";
+
+const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
+	const [summarizing, setSummarizing] = useState(false);
+
 	const getFileIcon = (fileType) => {
 		if (!fileType) return "📎";
 		if (fileType.startsWith("image/")) return "🖼️";
@@ -25,7 +30,43 @@ const FileMessage = ({ message, isSentByCurrentUser }) => {
 		window.open(`http://localhost:8080/files/${message.fileId}`, "_blank");
 	};
 
-	// Safety check - if message is malformed, show error state
+	// Handle document summarization
+	const handleSummarize = async (e) => {
+		e.stopPropagation();
+
+		if (summarizing) return;
+
+		try {
+			setSummarizing(true);
+
+			const response = await axios.post(`http://localhost:8080/files/summarize/${message.fileId}`, {
+				userMessage: "Summarize this document",
+			});
+
+			// Call parent component to add AI summary to chat
+			if (onSummarize) {
+				onSummarize(response.data.summary, message.fileName);
+			}
+		} catch (error) {
+			console.error("Error summarizing document:", error);
+			alert(error.response?.data?.error || "Failed to summarize document");
+		} finally {
+			setSummarizing(false);
+		}
+	};
+
+	// Check if file can be summarized
+	const canSummarize = () => {
+		if (!message.fileType) return false;
+		return (
+			message.fileType.includes("pdf") ||
+			message.fileType.includes("word") ||
+			message.fileType.includes("doc") ||
+			message.fileType.includes("text")
+		);
+	};
+
+	// Safety check
 	if (!message || !message.fileId) {
 		return <div className="text-red-500 text-sm">⚠️ File data missing</div>;
 	}
@@ -40,12 +81,17 @@ const FileMessage = ({ message, isSentByCurrentUser }) => {
 				<div className="relative group">
 					<img
 						src={`http://localhost:8080/files/${message.fileId}`}
-						alt={message.fileName}
+						alt={message.fileName || "Uploaded image"}
 						className="max-w-[300px] max-h-[300px] rounded-lg cursor-pointer object-cover shadow-md hover:shadow-xl transition-shadow"
 						onClick={handleImageClick}
+						onError={(e) => {
+							e.target.style.display = "none";
+							e.target.parentElement.innerHTML =
+								'<div class="text-red-500">Failed to load image</div>';
+						}}
 					/>
 					<div className="absolute bottom-2 left-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-						{message.fileName}
+						{message.fileName || "Image"}
 					</div>
 				</div>
 			) : isVideo ? (
@@ -57,26 +103,48 @@ const FileMessage = ({ message, isSentByCurrentUser }) => {
 					>
 						Your browser does not support the video tag.
 					</video>
-					<p className="text-xs text-gray-600 mt-1">{message.fileName}</p>
+					<p className="text-xs text-gray-600 mt-1">{message.fileName || "Video"}</p>
 				</div>
 			) : (
 				<div
-					onClick={handleDownload}
-					className={`file-attachment flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:shadow-lg ${
+					className={`file-attachment rounded-lg cursor-pointer transition-all hover:shadow-lg ${
 						isSentByCurrentUser
 							? "bg-blue-400/20 hover:bg-blue-400/30"
 							: "bg-gray-100 hover:bg-gray-200"
 					}`}
 					style={{ minWidth: "200px", maxWidth: "300px" }}
 				>
-					<span className="file-icon text-3xl">{getFileIcon(message.fileType)}</span>
-					<div className="file-info flex-1 min-w-0">
-						<div className="file-name text-sm font-medium truncate">{message.fileName}</div>
-						<div className="file-size text-xs text-gray-500">
-							{formatFileSize(message.fileSize)}
+					<div className="flex items-center gap-3 p-3" onClick={handleDownload}>
+						<span className="file-icon text-3xl">{getFileIcon(fileType)}</span>
+						<div className="file-info flex-1 min-w-0">
+							<div className="file-name text-sm font-medium truncate">
+								{message.fileName || "Unnamed file"}
+							</div>
+							<div className="file-size text-xs text-gray-500">
+								{formatFileSize(message.fileSize)}
+							</div>
 						</div>
+						<button className="flex-shrink-0 text-xl hover:scale-110 transition-transform">
+							⬇️
+						</button>
 					</div>
-					<button className="flex-shrink-0 text-xl hover:scale-110 transition-transform">⬇️</button>
+
+					{/* Summarize button for documents */}
+					{canSummarize() && (
+						<div className="border-t border-gray-200 p-2">
+							<button
+								onClick={handleSummarize}
+								disabled={summarizing}
+								className={`w-full px-3 py-2 text-xs font-semibold rounded-lg transition-all ${
+									summarizing
+										? "bg-gray-300 text-gray-500 cursor-not-allowed"
+										: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+								}`}
+							>
+								{summarizing ? "🤖 Summarizing..." : "🤖 Ask AI to Summarize"}
+							</button>
+						</div>
+					)}
 				</div>
 			)}
 		</div>
