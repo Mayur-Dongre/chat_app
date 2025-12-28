@@ -35,13 +35,37 @@ const Chat = () => {
 	const [isBotMessage, setIsBotMessage] = useState(false);
 	const [isChatWithAI, setIsChatWithAI] = useState(false);
 
-	const scrollToBottom = () => {
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	const [isInitialLoad, setIsInitialLoad] = useState(true);
+	const prevChatMsgsLength = useRef(0);
+
+	// Replace your existing scrollToBottom function with this
+	const scrollToBottom = (instant = false) => {
+		messagesEndRef.current?.scrollIntoView({
+			behavior: instant ? "auto" : "smooth",
+		});
 	};
 
+	// Replace your existing scroll useEffect with this
 	useEffect(() => {
-		scrollToBottom();
+		// Check if this is initial load or chat receiver changed
+		if (isInitialLoad || prevChatMsgsLength.current === 0) {
+			// Instant scroll for initial load (no animation)
+			scrollToBottom(true);
+			setIsInitialLoad(false);
+		} else if (chatMsgs.length > prevChatMsgsLength.current) {
+			// Smooth scroll only when new messages are added
+			scrollToBottom(false);
+		}
+
+		// Update previous length
+		prevChatMsgsLength.current = chatMsgs.length;
 	}, [chatMsgs]);
+
+	// Reset initial load flag when chat receiver changes
+	useEffect(() => {
+		setIsInitialLoad(true);
+		prevChatMsgsLength.current = 0;
+	}, [chatReceiver]);
 
 	// format last seen time
 	const formatLastSeen = (lastSeen) => {
