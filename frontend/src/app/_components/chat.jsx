@@ -16,7 +16,6 @@ import { formatMessageTime, shouldShowDateSeparator } from "../utils/dateUtils";
 const API_URL = process.env.API_URL;
 
 const Chat = () => {
-	// const [msgs, setMsgs] = useState([]);
 	const router = useRouter();
 	const [msg, setMsg] = useState("");
 	const [socket, setSocket] = useState(null);
@@ -25,15 +24,16 @@ const Chat = () => {
 
 	const messagesEndRef = useRef(null);
 	const typingTimeoutRef = useRef(null);
-	const markedAsSeenRef = useRef(new Set()); // Add this ref
+	const markedAsSeenRef = useRef(new Set());
 
 	const { authName, clearAuth } = useAuthStore();
 	const { updateUsers, getAvatarColor, getInitials } = useUsersStore();
 	const { chatReceiver, updateChatReceiver } = useChatReceiverStore();
 	const { chatMsgs, updateChatMsgs, addChatMsg, updateMsgStatus } = useChatMsgsStore();
 
-	const chatReceiverRef = useRef(chatReceiver); // imp closures stale state
+	const chatReceiverRef = useRef(chatReceiver);
 	const [isBotMessage, setIsBotMessage] = useState(false);
+	const [isChatWithAI, setIsChatWithAI] = useState(false);
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,32 +68,50 @@ const Chat = () => {
 		const res = await axios.get("http://localhost:8081/users", {
 			withCredentials: true,
 		});
-		// debugger;
 		updateUsers(res.data);
 		console.log("users: ", res.data);
 	};
 
+	// Updated function to send conversation history
 	const getLLMResponse = async (userMessage) => {
-		// debugger;
+		// Get conversation history for AI chat
+		const aiConversation = chatMsgs
+			.filter((message) => {
+				// Filter messages between current user and AI
+				return (
+					message.messageType === "text" &&
+					((message.sender === authName && message.receiver === "AI") ||
+						(message.sender === "AI" && message.receiver === authName))
+				);
+			})
+			.map((message) => ({
+				role: message.sender === "AI" ? "assistant" : "user",
+				content: message.text,
+			}));
+
+		// Add the new user message
+		aiConversation.push({
+			role: "user",
+			content: userMessage,
+		});
+
+		console.log("Sending conversation to Lambda:", aiConversation);
+
 		const res = await axios.post(
 			`https://qul1nvzmo5.execute-api.ap-south-1.amazonaws.com/prod/testFunction`,
 			{
-				userMessage,
+				conversation: aiConversation,
 			}
 		);
-		// console.log("res: ", res);
 		return res?.data?.message;
-		// debugger;
 	};
 
 	useEffect(() => {
-		setIsReceiverTyping(false); // Reset typing indicator
+		setIsReceiverTyping(false);
 		chatReceiverRef.current = chatReceiver;
-		if (chatReceiverRef.current === "AI") {
-			setIsBotMessage(true);
-		} else {
-			setIsBotMessage(false);
-		}
+		// Check if chatting with AI
+		setIsChatWithAI(chatReceiver === "AI");
+		setIsBotMessage(false);
 	}, [chatReceiver]);
 
 	useEffect(() => {
@@ -241,6 +259,7 @@ const Chat = () => {
 
 		const messageId = `${Date.now()}-${Math.random()}`;
 
+		// Send user's message first
 		let response = null;
 		if (isBotMessage) {
 			response = await getLLMResponse(msg);
@@ -268,13 +287,50 @@ const Chat = () => {
 			  };
 
 		if (socket) {
-			socket.emit("chat msg", msgToBeSent);
-			console.log("chatMsgs before sending msg : ", chatMsgs);
-			// setMsgs((prevMsgs) => [...prevMsgs, { text: msg, sentByCurrUser: true, time }]);
-			// updateChatMsgs([...chatMsgs, msgToBeSent]);
-			addChatMsg(msgToBeSent);
+			// If chatting with AI, get response and save it
+			if (isChatWithAI) {
+				try {
+					const userTxtMessage = {
+						text: msg,
+						sender: authName,
+						receiver: chatReceiver,
+						messageType: "text",
+						timestamp: new Date().toISOString(),
+						status: "sent",
+						messageId,
+					};
+
+					addChatMsg(userTxtMessage);
+					socket.emit("chat msg", userTxtMessage);
+
+					const aiResponse = await getLLMResponse(msg);
+
+					if (aiResponse) {
+						const aiMessageId = `${Date.now()}-${Math.random()}`;
+						const aiMsgToBeSent = {
+							text: aiResponse,
+							sender: "AI",
+							receiver: authName,
+							messageType: "text",
+							timestamp: new Date().toISOString(),
+							status: "seen", // AI messages are auto-seen
+							messageId: aiMessageId,
+						};
+
+						// Add AI response to local state
+						// addChatMsg(aiMsgToBeSent);
+
+						// Save AI response to database via socket
+						socket.emit("chat msg", aiMsgToBeSent);
+					}
+				} catch (error) {
+					console.error("Error getting AI response:", error);
+				}
+			} else {
+				socket.emit("chat msg", msgToBeSent);
+				addChatMsg(msgToBeSent);
+			}
 			setMsg("");
-			console.log("chatMsgs after sending msg : ", chatMsgs);
 
 			// Stop typing indicator
 			socket.emit("typing", {
@@ -318,12 +374,32 @@ const Chat = () => {
 			receiver: authName,
 			messageType: "text",
 			timestamp: new Date().toISOString(),
-			status: "delivered",
+			status: "seen",
 			messageId: summaryMsgId,
 			isAI: true,
 		};
 
-		addChatMsg(summaryMessage);
+		const summaryMessageAI = {
+			text: `@AI: 📄 **Summary of ${fileName}**\n\n${summary}`,
+			sender: authName,
+			receiver: chatReceiver,
+			messageType: "text",
+			timestamp: new Date().toISOString(),
+			status: "seen",
+			messageId: summaryMsgId,
+		};
+
+		// Add to local state
+		if (!isChatWithAI) {
+			addChatMsg(summaryMessageAI);
+		}
+
+		// Save to database via socket
+		if (socket) {
+			isChatWithAI
+				? socket.emit("chat msg", summaryMessage)
+				: socket.emit("chat msg", summaryMessageAI);
+		}
 	};
 
 	const handleFileUploaded = (fileMessage) => {
@@ -428,7 +504,6 @@ const Chat = () => {
 								);
 							})
 							.map((message, index, filteredArray) => {
-								// debugger;
 								return (
 									<React.Fragment key={index}>
 										{/* Show date separator if date changed */}
@@ -448,7 +523,14 @@ const Chat = () => {
 												}`}
 											>
 												{message.messageType === "file" ? (
-													<div>
+													<div
+														className={`inline-block px-4 py-2 rounded-2xl shadow-md ${
+															message.sender === authName
+																? "bg-blue-500 text-white rounded-br-none"
+																: "bg-white text-gray-800 rounded-bl-none"
+														}`}
+													>
+														{/* // <div className="file-message"> */}
 														<FileMessage
 															message={message}
 															isSentByCurrentUser={message.sender === authName}
@@ -456,14 +538,18 @@ const Chat = () => {
 														/>
 														<div className="flex items-center justify-end gap-1 mt-1">
 															<p
-																className={`text-xs text-gray-500 mt-1 ${
+																className={`text-xs text-gray-350 mt-1 ${
 																	message.sender === authName ? "text-right" : "text-left"
 																}`}
 															>
 																{formatMessageTime(message.timestamp)}
 															</p>
-															{message.sender === authName && (
-																<span className="text-xs">{getStatusIcon(message.status)}</span>
+															{message.sender === authName && isChatWithAI ? (
+																<span className="text-xs">{getStatusIcon("seen")}</span>
+															) : (
+																message.sender === authName && (
+																	<span className="text-xs">{getStatusIcon(message.status)}</span>
+																)
 															)}
 														</div>
 													</div>
@@ -485,10 +571,12 @@ const Chat = () => {
 																>
 																	{formatMessageTime(message.timestamp)}
 																</p>
-																{message.sender === authName && chatReceiver === "AI" ? (
+																{message.sender === authName && isChatWithAI ? (
 																	<span className="text-xs">{getStatusIcon("seen")}</span>
 																) : (
-																	<span className="text-xs">{getStatusIcon(message.status)}</span>
+																	message.sender === authName && (
+																		<span className="text-xs">{getStatusIcon(message.status)}</span>
+																	)
 																)}
 															</div>
 														</div>
@@ -523,14 +611,14 @@ const Chat = () => {
 							/>
 							<button
 								type="button"
-								onClick={() => setIsBotMessage(true)}
+								onClick={() => setIsBotMessage((prev) => !prev)}
 								className={`px-8 py-3 text-sm font-semibold rounded-full transition-all transform hover:scale-105 active:scale-95 ${
-									isBotMessage
+									isBotMessage || isChatWithAI
 										? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
 										: "bg-gray-200 text-gray-700 hover:bg-gray-300"
 								}`}
 							>
-								{isBotMessage ? "🤖 AI On" : "🤖 AI"}
+								{isChatWithAI ? "🤖 AI On" : isBotMessage ? "🤖 AI On" : "🤖 AI"}
 							</button>
 							<button
 								type="submit"

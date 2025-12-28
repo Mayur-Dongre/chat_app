@@ -109,8 +109,8 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 				<div
 					className={`file-attachment rounded-lg cursor-pointer transition-all hover:shadow-lg ${
 						isSentByCurrentUser
-							? "bg-blue-400/20 hover:bg-blue-400/30"
-							: "bg-gray-100 hover:bg-gray-200"
+							? "hover:bg-blue-400/30"
+							: "hover:bg-gray-200"
 					}`}
 					style={{ minWidth: "200px", maxWidth: "300px" }}
 				>
@@ -120,7 +120,7 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 							<div className="file-name text-sm font-medium truncate">
 								{message.fileName || "Unnamed file"}
 							</div>
-							<div className="file-size text-xs text-gray-500">
+							<div className="file-size text-xs text-gray-350">
 								{formatFileSize(message.fileSize)}
 							</div>
 						</div>
