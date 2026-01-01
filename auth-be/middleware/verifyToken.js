@@ -1,21 +1,23 @@
 import jwt from "jsonwebtoken";
 
 const verifyToken = async (req, res, next) => {
-	// get token from cookie
-	const token = req.cookies.jwt;
+	// Get token from Authorization header instead of cookie
+	const authHeader = req.headers.authorization;
 
-	// console.log("Cookie received:", req.cookies); // Debug line
-	// console.log("JWT Token:", token); // Debug line
+	if (!authHeader || !authHeader.startsWith("Bearer ")) {
+		return res.status(401).json({ message: "Unauthorized: No token provided" });
+	}
+	// Extract token (format: "Bearer <token>")
+	const token = authHeader.split(" ")[1];
 
-	// check if token exists
 	if (!token) {
 		return res.status(401).json({ message: "Unauthorized: No token provided" });
 	}
 
 	try {
 		console.log("Verifying Token ...");
-		// verfy token
 		const decoded = await jwt.verify(token, process.env.JWT_SECRET);
+		req.userId = decoded.userId;
 		next();
 	} catch (error) {
 		console.log("error verifying token: ", error.message);
