@@ -12,8 +12,9 @@ import FileUpload from "./fileUpload";
 import FileMessage from "./fileMessage";
 import DateSeparator from "./DateSeparator";
 import { formatMessageTime, shouldShowDateSeparator } from "../utils/dateUtils";
+import { authAPI } from "@/config/api";
 
-const API_URL = process.env.API_URL;
+const WEB_API_URL = process.env.API_URL;
 
 const Chat = () => {
 	const router = useRouter();
@@ -89,9 +90,7 @@ const Chat = () => {
 	};
 
 	const getUserData = async () => {
-		const res = await axios.get("http://localhost:8081/users", {
-			withCredentials: true,
-		});
+		const res = await authAPI.get("/users");
 		updateUsers(res.data);
 		console.log("users: ", res.data);
 	};
@@ -121,12 +120,9 @@ const Chat = () => {
 
 		console.log("Sending conversation to Lambda:", aiConversation);
 
-		const res = await axios.post(
-			`https://qul1nvzmo5.execute-api.ap-south-1.amazonaws.com/prod/testFunction`,
-			{
-				conversation: aiConversation,
-			}
-		);
+		const res = await axios.post(`${WEB_API_URL}testFunction`, {
+			conversation: aiConversation,
+		});
 		return res?.data?.message;
 	};
 
