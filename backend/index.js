@@ -8,6 +8,7 @@ import msgsRouter from "./routes/msgs.route.js";
 import fileRouter from "./routes/file.route.js";
 import cors from "cors";
 import { initGridFS } from "./config/gridfs.config.js";
+import { subscribe, publish } from "./redis/msgsPubSub.js";
 
 dotenv.config();
 const PORT = process.env.PORT || 8080;
@@ -49,6 +50,12 @@ io.on("connection", (socket) => {
 		lastSeen: new Date(),
 	};
 
+	const channelName = `chat_${username}`;
+	subscribe(channelName, (msg) => {
+		console.log("Received msg : ", msg);
+		socket.emit("chat msg", JSON.parse(msg));
+	});
+
 	// broadcast to all users that this user is online
 	io.emit("user status", {
 		username,
@@ -73,15 +80,20 @@ io.on("connection", (socket) => {
 		console.log("Received message with ID:", msgWithTimestamp.messageId);
 
 		if (receiverSocket) {
+			// both sender & receiver are connected to same BE
 			receiverSocket.emit("chat msg", msgWithTimestamp);
 			console.log("Message sent to receiver:", msg.receiver);
-			
+
 			// send delivery confirmation
 			// CHANGE-1: commented below 4 lines	/////////////////////////////////////////////
 			// socket.emit("msg delivered", {
 			// 	messageId: msgWithTimestamp.messageId,
 			// 	timestamp: new Date().toISOString(),
 			// });
+		} else {
+			// sender & receiver on diff BEs, so we need to use PubSub
+			const channelName = `chat_${msg.receiver}`;
+			publish(channelName, JSON.stringify(msgWithTimestamp));
 		}
 
 		// save to database
