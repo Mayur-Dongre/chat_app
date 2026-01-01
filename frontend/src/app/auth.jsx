@@ -1,14 +1,14 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "./zustand/useAuthStore";
+import { authAPI } from "@/config/api";
 
 const Auth = () => {
 	const router = useRouter();
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
-	const { authName, updateAuthName, isHydrated } = useAuthStore();
+	const { authName, updateAuthName, updateAuthToken, isHydrated } = useAuthStore();
 
 	useEffect(() => {
 		if (isHydrated && authName) {
@@ -36,48 +36,43 @@ const Auth = () => {
 		try {
 			console.log("username: ", username);
 			console.log("password: ", password);
-			const res = await axios.post(
-				"http://localhost:8081/auth/signup",
-				{
-					username: username,
-					password: password,
-				},
-				{
-					withCredentials: true,
-				}
-			);
+			const res = await authAPI.post("/auth/signup", {
+				username: username,
+				password: password,
+			});
 
 			if (res.data.message === "Username already exists") {
 				console.log("Username already exists sending alert");
 				alert("Username already exists");
 			} else {
+				// save both authname & token
 				updateAuthName(username);
+				updateAuthToken(res.data.token);
+
 				router.replace("/chat");
 			}
 		} catch (error) {
 			console.log("Error in signup function : ", error.message);
+			alert("Signup failed: " + (error.response?.data?.message || error.message));
 		}
 	};
 
 	const loginFunc = async (event) => {
 		event.preventDefault();
 		try {
-			const res = await axios.post(
-				"http://localhost:8081/auth/login",
-				{
-					username: username,
-					password: password,
-				},
-				{
-					withCredentials: true,
-				}
-			);
+			const res = await authAPI.post("/auth/login", {
+				username: username,
+				password: password,
+			});
 
+			// save bothe authname & token
 			updateAuthName(username);
+			updateAuthToken(res.data.token);
+			debugger
 			router.replace("/chat");
 		} catch (error) {
-			console.log("Error in login function : ", error.message);
-			alert("login failed: ", error.message);
+			console.log("Error in login function : ", error);
+			alert("login failed: ", error);
 		}
 	};
 
