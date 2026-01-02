@@ -22,12 +22,12 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 	};
 
 	const handleDownload = () => {
-		window.open(`http://localhost:8082/files/${message.fileId}`, "_blank");
+		window.open(`https://backend2-s0ij.onrender.com/files/${message.fileId}`, "_blank");
 	};
 
 	const handleImageClick = (e) => {
 		e.stopPropagation();
-		window.open(`http://localhost:8082/files/${message.fileId}`, "_blank");
+		window.open(`https://backend2-s0ij.onrender.com/files/${message.fileId}`, "_blank");
 	};
 
 	// Handle document summarization
@@ -39,9 +39,12 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 		try {
 			setSummarizing(true);
 
-			const response = await axios.post(`http://localhost:8082/files/summarize/${message.fileId}`, {
-				userMessage: "Summarize this document",
-			});
+			const response = await axios.post(
+				`https://backend2-s0ij.onrender.com/files/summarize/${message.fileId}`,
+				{
+					userMessage: "Summarize this document",
+				}
+			);
 
 			// Call parent component to add AI summary to chat
 			if (onSummarize) {
@@ -80,7 +83,7 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 			{isImage ? (
 				<div className="relative group">
 					<img
-						src={`http://localhost:8082/files/${message.fileId}`}
+						src={`https://backend2-s0ij.onrender.com/files/${message.fileId}`}
 						alt={message.fileName || "Uploaded image"}
 						className="max-w-[300px] max-h-[300px] rounded-lg cursor-pointer object-cover shadow-md hover:shadow-xl transition-shadow"
 						onClick={handleImageClick}
@@ -99,7 +102,7 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 					<video
 						controls
 						className="w-full rounded-lg shadow-md"
-						src={`http://localhost:8082/files/${message.fileId}`}
+						src={`https://backend2-s0ij.onrender.com/files/${message.fileId}`}
 					>
 						Your browser does not support the video tag.
 					</video>
@@ -108,9 +111,7 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 			) : (
 				<div
 					className={`file-attachment rounded-lg cursor-pointer transition-all hover:shadow-lg ${
-						isSentByCurrentUser
-							? "hover:bg-blue-400/30"
-							: "hover:bg-gray-200"
+						isSentByCurrentUser ? "hover:bg-blue-400/30" : "hover:bg-gray-200"
 					}`}
 					style={{ minWidth: "200px", maxWidth: "300px" }}
 				>

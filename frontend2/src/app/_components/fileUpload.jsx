@@ -22,9 +22,13 @@ const FileUpload = ({ sender, receiver, socket, onFileUploaded }) => {
 
 		try {
 			setUploading(true);
-			const response = await axios.post("http://localhost:8082/files/upload", formData, {
-				headers: { "Content-Type": "multipart/form-data" },
-			});
+			const response = await axios.post(
+				"https://backend2-s0ij.onrender.com/files/upload",
+				formData,
+				{
+					headers: { "Content-Type": "multipart/form-data" },
+				}
+			);
 			// debugger;
 			console.log("File Uploaded: ", response.data);
 
@@ -33,7 +37,7 @@ const FileUpload = ({ sender, receiver, socket, onFileUploaded }) => {
 				...response.data.fileMessage,
 				messageId: response.data.fileMessage.messageId || `${Date.now()}-${Math.random()}`,
 				status: "sent",
-			}
+			};
 
 			// emit socket event to notify receiver in real time
 			if (socket) {
@@ -44,7 +48,6 @@ const FileUpload = ({ sender, receiver, socket, onFileUploaded }) => {
 			if (onFileUploaded) {
 				onFileUploaded(fileMessageWithId);
 			}
-
 		} catch (error) {
 			console.error("Upload failed: ", error);
 			alert(error.response?.data?.error || "Upload failed");

@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "../app/zustand/useAuthStore.js";
 
 export const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:8081";
-export const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8082";
+export const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 // Create axios instance
 export const authAPI = axios.create({

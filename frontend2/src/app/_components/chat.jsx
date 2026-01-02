@@ -14,7 +14,7 @@ import DateSeparator from "./DateSeparator";
 import { formatMessageTime, shouldShowDateSeparator } from "../utils/dateUtils";
 import { authAPI } from "@/config/api";
 
-const WEB_API_URL = process.env.API_URL;
+export const WEB_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const Chat = () => {
 	const router = useRouter();
@@ -118,8 +118,10 @@ const Chat = () => {
 			content: userMessage,
 		});
 
-		console.log("Sending conversation to Lambda:", aiConversation);
+		console.log("Sending conversation to Lambda: ", aiConversation);
+		console.log("WEB_API_URL: ", WEB_API_URL);
 
+		debugger;
 		const res = await axios.post(`${WEB_API_URL}testFunction`, {
 			conversation: aiConversation,
 		});
@@ -138,10 +140,27 @@ const Chat = () => {
 		if (!authName) return;
 
 		// Establish WebSocket connection
-		const newSocket = io("http://localhost:8082", {
+		const newSocket = io("https://backend2-s0ij.onrender.com", {
 			query: {
 				username: authName,
 			},
+		});
+
+		// Connection event handlers for debugging
+		newSocket.on("connect", () => {
+			console.log("Socket connected successfully!", newSocket.id);
+			debugger;
+		});
+
+		newSocket.on("connect_error", (error) => {
+			console.error("Socket connection error:", error.message);
+			console.error("Error details:", error);
+			debugger;
+		});
+
+		newSocket.on("disconnect", (reason) => {
+			console.log("Socket disconnected:", reason);
+			debugger;
 		});
 
 		setSocket(newSocket);

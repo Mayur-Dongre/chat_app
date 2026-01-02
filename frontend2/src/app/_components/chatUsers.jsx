@@ -51,12 +51,12 @@ const ChatUsers = ({ userStatus, isReceiverTyping }) => {
 	useEffect(() => {
 		const getMsgs = async () => {
 			try {
-				const res = await axios.get("http://localhost:8082/msgs", {
+				const res = await axios.get("https://backend2-s0ij.onrender.com/msgs", {
 					params: {
 						sender: authName,
 						receiver: chatReceiver,
 					},
-					withCredentials: true,
+					// withCredentials: true,
 				});
 				console.log("result : ", res);
 				// debugger;

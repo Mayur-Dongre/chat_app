@@ -16,24 +16,31 @@ const PORT = process.env.PORT || 8080;
 const app = express();
 
 // add cors middleware for express routes
-app.use(
-	cors({
-		origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
-		methods: ["GET", "POST", "PUT", "DELETE"],
-		credentials: true, // Add this line
-	})
-);
+app.use(cors());
+// app.use(
+// 	cors({
+// 		origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+// 		methods: ["GET", "POST", "PUT", "DELETE"],
+// 		credentials: true, // Add this line
+// 	})
+// );
 
 // add a json parser if you are handling JSON data
 app.use(express.json());
 
 const server = http.createServer(app);
+
 // const io = new Server(server);
+
 const io = new Server(server, {
 	cors: {
-		allowedHeaders: ["*"],
 		origin: "*",
+		allowedHeaders: ["*"],
+		credentials: true,
 	},
+	// Add these options for better compatibility
+	transports: ["websocket", "polling"],
+	allowEIO3: true,
 });
 
 const userSocketMap = {}; // { username: socket }
