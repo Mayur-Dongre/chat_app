@@ -23,7 +23,7 @@ const FileUpload = ({ sender, receiver, socket, onFileUploaded }) => {
 		try {
 			setUploading(true);
 			const response = await axios.post(
-				"https://backend2-s0ij.onrender.com/files/upload",
+				"https://backend2-9yyf.onrender.com/files/upload",
 				formData,
 				{
 					headers: { "Content-Type": "multipart/form-data" },

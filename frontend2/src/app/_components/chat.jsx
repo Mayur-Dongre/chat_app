@@ -140,7 +140,7 @@ const Chat = () => {
 		if (!authName) return;
 
 		// Establish WebSocket connection
-		const newSocket = io("https://backend2-s0ij.onrender.com", {
+		const newSocket = io("https://backend2-9yyf.onrender.com", {
 			query: {
 				username: authName,
 			},
