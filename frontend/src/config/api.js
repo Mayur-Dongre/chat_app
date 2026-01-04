@@ -1,8 +1,10 @@
 import axios from "axios";
 import { useAuthStore } from "../app/zustand/useAuthStore.js";
 
-export const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:8081";
-export const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+export const AUTH_API_URL =
+	process.env.NEXT_PUBLIC_AUTH_API_URL || "https://auth-be-uivq.onrender.com";
+export const BACKEND_API_URL =
+	process.env.NEXT_PUBLIC_BACKEND_API_URL || "https://backend-wscx.onrender.com";
 
 // Create axios instance
 export const authAPI = axios.create({
@@ -21,7 +23,7 @@ authAPI.interceptors.request.use(
 		if (token) {
 			config.headers.Authorization = `Bearer ${token}`;
 		}
-		debugger
+		debugger;
 		return config;
 	},
 	(error) => {

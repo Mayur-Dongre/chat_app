@@ -22,12 +22,12 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 	};
 
 	const handleDownload = () => {
-		window.open(`https://backend-fu0m.onrender.com/files/${message.fileId}`, "_blank");
+		window.open(`https://backend-wscx.onrender.com/files/${message.fileId}`, "_blank");
 	};
 
 	const handleImageClick = (e) => {
 		e.stopPropagation();
-		window.open(`https://backend-fu0m.onrender.com/files/${message.fileId}`, "_blank");
+		window.open(`https://backend-wscx.onrender.com/files/${message.fileId}`, "_blank");
 	};
 
 	// Handle document summarization
@@ -40,7 +40,7 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 			setSummarizing(true);
 
 			const response = await axios.post(
-				`https://backend-fu0m.onrender.com/files/summarize/${message.fileId}`,
+				`https://backend-wscx.onrender.com/files/summarize/${message.fileId}`,
 				{
 					userMessage: "Summarize this document",
 				}
@@ -83,7 +83,7 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 			{isImage ? (
 				<div className="relative group">
 					<img
-						src={`https://backend-fu0m.onrender.com/files/${message.fileId}`}
+						src={`https://backend-wscx.onrender.com/files/${message.fileId}`}
 						alt={message.fileName || "Uploaded image"}
 						className="max-w-[300px] max-h-[300px] rounded-lg cursor-pointer object-cover shadow-md hover:shadow-xl transition-shadow"
 						onClick={handleImageClick}
@@ -102,7 +102,7 @@ const FileMessage = ({ message, isSentByCurrentUser, onSummarize }) => {
 					<video
 						controls
 						className="w-full rounded-lg shadow-md"
-						src={`https://backend-fu0m.onrender.com/files/${message.fileId}`}
+						src={`https://backend-wscx.onrender.com/files/${message.fileId}`}
 					>
 						Your browser does not support the video tag.
 					</video>
