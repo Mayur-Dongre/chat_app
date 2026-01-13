@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import multer from 'multer';
+import mongoose from "mongoose";
+import multer from "multer";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 
@@ -37,6 +37,7 @@ const fileFilter = (req, file, cb) => {
 		"image/webp",
 		// Documents
 		"application/pdf",
+		"text/plain",
 		"application/msword",
 		"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 		// Spreadsheets
@@ -73,7 +74,5 @@ const upload = multer({
 const getGridfsBucket = () => gridfsBucket;
 
 export { upload, getGridfsBucket, initGridFS };
-
-
 
 // export gridfsBucket;

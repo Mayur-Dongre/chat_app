@@ -1,0 +1,42 @@
+# version: '3.8'
+
+services:
+  backend:
+    # image: mdspace04/chatapp-be:lts
+    build:
+      context: ./backend # Path to the backend Dockerfile
+    ports:
+      - "8080:8080"
+  
+  backend2:
+    # image: mdspace04/chatapp-be2:lts
+    build:
+      context: ./backend # Path to the backend Dockerfile
+    ports:
+      - "8082:8080"
+  
+  auth-backend:
+    # image: mdspace04/chatapp-auth-be:lts
+    build:
+      context: ./auth-be # Path to the backend Dockerfile
+    ports:
+      - "8081:8081"
+  
+  frontend:
+    # image: mdspace04/chatapp-fe:lts
+    build:
+      context: ./frontend # Path to the frontend Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend # Wait for backend service to be ready before starting frontend
+  
+  frontend2:
+    # image: mdspace04/chatapp-fe2:lts
+    build:
+      context: ./frontend2 # Path to the frontend Dockerfile
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend2 # Wait for backend service to be ready before starting frontend
+  
